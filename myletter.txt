@@ -1,0 +1,7 @@
+Dear person,
+
+This is my letter to you written in LED.
+
+And this is a new line.
+
+From, Luke

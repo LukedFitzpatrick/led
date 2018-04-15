@@ -1,0 +1,67 @@
+
+main.cc,17
+int main(11,155
+
+editor.h,163
+constexpr char CtrlKey(4,34
+struct Editor9,96
+    int ReadKey(12,147
+    bool HandleKey(24,359
+    void DrawScreen(137,2796
+    Buffer* mCurrBuffer;196,4439
+
+buffer.h,1323
+const std::string VERSION 3,31
+struct CommandResult5,69
+    int newBufferId 7,92
+    bool quit 8,117
+enum Mode12,145
+    MODE_EDIT,14,157
+    MODE_COMMAND,15,172
+    MODE_JUMP16,190
+struct Buffer19,208
+    Buffer(21,224
+    std::string DescribeSelf(30,425
+    int mBufId;36,578
+    int mNumCols;38,599
+    int mNumRows;39,617
+    int mCursX 42,666
+    int mCursY 43,686
+    int GetScreenCursX(46,741
+    int GetScreenCursY(47,800
+    int mScrollY 49,860
+    int mScrollX 50,882
+    std::vector<std::string> mLines 53,972
+    std::string* CurrLine(55,1015
+    void NextColumn(60,1092
+    void PrevColumn(61,1139
+    void NextRow(62,1186
+    void PrevRow(63,1233
+    void StartRow(65,1281
+    void StartColumn(66,1330
+    void EndRow(67,1379
+    void EndColumn(68,1445
+    void Scroll(70,1515
+    void InsertChar(82,1836
+    void InsertLine(90,2018
+    void DeleteCharForward(95,2101
+    void DeleteCharBackwards(113,2533
+    void KillForward(130,2911
+    void InsertNewLine(135,2982
+    std::string mLedLine 148,3392
+    std::string DefaultLedLine(149,3437
+    std::string mCommandString;150,3519
+    Mode mMode 152,3556
+    void EnterCommandMode(154,3585
+    void InsertCommandChar(161,3717
+    void RunCommand(167,3853
+    void EnterJumpMode(172,3910
+    void Cancel(178,4002
+
+term_setup.h,164
+struct TermSetup7,79
+    TermSetup(9,98
+    ~TermSetup(40,1149
+    struct termios mOriginalSettings;47,1338
+    int mNumCols;48,1376
+    int mNumRows;49,1394
