@@ -73,28 +73,6 @@ struct Editor
         std::vector<std::string> words(begin, end);
 
         // TODO write a proper tokeniser + parser here
-        if(words.size() > 0)
-        {
-            if(words.size() > 1)
-            {
-                // change buffer
-                if(words[0] == "buf")
-                {
-                    int bufId = (std::stoi(words[1]));
-                    Buffer* foundBuffer = GetBufferById(bufId);
-                    if(foundBuffer)
-                    {
-                        mCurrBuffer = foundBuffer;
-                        Message("Change to buf id=" + std::to_string(bufId));
-                    }
-                    else
-                    {
-                        mCurrBuffer->InsertLine("Change to buf id=" + std::to_string(bufId));
-                        Message("Couldn't find buf id=" + std::to_string(bufId));
-                    }
-                }
-            }
-        }
     }
 
     std::vector<Buffer*> mBuffers = {};
@@ -130,6 +108,12 @@ struct Editor
             {
                 buf->DeleteCharBackwards();
             } break;
+
+            case '\t':
+            {
+                buf->Tab();
+            } break;
+            
             // quit
             case CtrlKey('q'):
             {
@@ -268,13 +252,24 @@ struct Editor
             writeString += "\x1b[K";
             if(y == end - 1)
             {
+
+                writeString += "\x1b[103m";
+                writeString += "\x1b[30m";
                 // write the led line, centered
-                int padding = (buf->mNumCols- buf->mLedLine.size()) / 2;
+                std::string ledLine = buf->GetLedLine();
+                int padding = (buf->mNumCols-ledLine.size()) / 2;
+                int backpadding = buf->mNumCols - (padding + ledLine.size());
                 while(padding-- > 0)
                 {
                     writeString += " ";
                 }
-                writeString += buf->mLedLine;
+                writeString += ledLine;
+                while(backpadding-- > 0)
+                {
+                    writeString += " ";
+                }                
+                writeString += "\x1b[40m";
+                writeString += "\x1b[39m";
             }
             else
             {

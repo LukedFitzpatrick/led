@@ -20,7 +20,6 @@ struct Buffer
         mFileName = filename;
         mName = filename;
         Scroll();
-        mLedLine = DefaultLedLine();
     }
 
     // TODO add filename etc. here when we start doing that
@@ -35,7 +34,9 @@ struct Buffer
     int mBufId;
     std::string mName;
     std::string mFileName = "foo.txt";
-        
+
+    bool mChangesSaved = true;
+
     int mNumCols;
     int mNumRows;
 
@@ -52,6 +53,7 @@ struct Buffer
 
     // TODO do we want a linked list here for efficient insertion?
     std::vector<std::string> mLines = {};
+    std::vector<std::string> mSavedLines = {};
 
     std::string* CurrLine()
     {
@@ -94,6 +96,8 @@ struct Buffer
 
         // TODO vertical insert mode, just call NextRow() here
         NextColumn();
+
+        mChangesSaved = false;
     }
 
     void InsertLine(std::string text)
@@ -120,6 +124,8 @@ struct Buffer
             CurrLine()->erase(mCursX, 1);
         }
         Scroll();
+
+        mChangesSaved = false;
     }
 
     // currently unbound
@@ -145,6 +151,8 @@ struct Buffer
             CurrLine()->erase(mCursX-- -1, 1);
         }
         Scroll();
+
+        mChangesSaved = false;
     }
     
     void KillForward()
@@ -158,6 +166,7 @@ struct Buffer
             CurrLine()->erase(mCursX);
         }
         Scroll();
+        mChangesSaved = false;
     }
 
     void InsertNewLine()
@@ -170,15 +179,41 @@ struct Buffer
         mLines.insert(mLines.begin() + mCursY + 1, partAfter);
         NextRow();
         StartRow();
+        mChangesSaved = false;
     }
     
     // line at the bottom of the buffer
-    std::string mLedLine;
-    
-    std::string DefaultLedLine()
+    std::string GetLedLine()
     {
-        return "LED : " + mName;
+        std::string line = "";
+
+        if(mMode == MODE_COMMAND)
+        {
+            line = "Command: " + mCommandString;
+        }
+        else if(mMode == MODE_JUMP)
+        {
+            line = "Jump: ";
+        }
+        else
+        {
+            if(!mChangesSaved)
+            {
+                line += "(*)";
+            }
+            line += "LED : " + mName;
+        }
+        return line;
     }
+
+    void Tab()
+    {
+        InsertChar(' ');
+        InsertChar(' ');
+        InsertChar(' ');
+        InsertChar(' ');
+    }
+    
     std::string mCommandString;
     
     Mode mMode = MODE_EDIT;
@@ -187,33 +222,48 @@ struct Buffer
     {
         mCommandString = "";
         mMode = MODE_COMMAND;
-        mLedLine = "Command: ";
     }
 
     void InsertCommandChar(char c)
     {
         mCommandString += std::string(1, c);
-        mLedLine += std::string(1, c);
     }
     
     void EnterJumpMode()
     {
         mMode = MODE_JUMP;
-        mLedLine = "Jump";
     }
 
     void Cancel()
     {
-        mMode = MODE_EDIT;
-        mLedLine = DefaultLedLine();
-        mCommandString = "";
-    }
+        if(mMode == MODE_COMMAND)
+        {
+            mMode = MODE_EDIT;
+            mCommandString = "";
+        }
+        else if(mMode == MODE_JUMP)
+        {
+            mMode = MODE_EDIT;
+        }
+        else if(mMode == MODE_EDIT)
+        {
+            mLines = mSavedLines;
+            if(mCursY > (int) mLines.size())
+            {
+                mCursY = mLines.size();
+            }
 
+            mCursX = std::min(mCursX, (int) CurrLine()->length());
+            Scroll();
+            mChangesSaved = true;
+        }
+    }
+    
     void SaveToFile()
     {
         if(mFileName == "")
         {
-            // TODO prompt for a filename
+            // TODO prompt for a filename
         }
         else
         {
@@ -225,6 +275,8 @@ struct Buffer
             }
             outfile.close();
         }
+        mChangesSaved = true;
+        mSavedLines = mLines;
     }
 
     bool OpenFile(std::string filename)
@@ -237,19 +289,22 @@ struct Buffer
 
         mFileName = filename;
         mName = filename;
-
+        mChangesSaved = true;
+        
         std::string line;
         while(getline(infile, line))
         {
             InsertLine(line);
         }
         infile.close();
-        
+
+        mSavedLines = mLines;
         return true;
     }
 
     void MakeFile(std::string filename)
     {
+        mChangesSaved = false;
         mFileName = filename;
         mName = filename;
     }
