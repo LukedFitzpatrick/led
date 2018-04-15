@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <fstream>
+#include <map>
+
 const std::string VERSION = "0.0.1";
 
 enum Mode
@@ -35,8 +37,6 @@ struct Buffer
     std::string mName;
     std::string mFileName = "foo.txt";
 
-    bool mChangesSaved = true;
-
     int mNumCols;
     int mNumRows;
 
@@ -54,7 +54,8 @@ struct Buffer
     // TODO do we want a linked list here for efficient insertion?
     std::vector<std::string> mLines = {};
     std::vector<std::string> mSavedLines = {};
-
+    std::vector<int> mChangedLines = {};
+    
     std::string* CurrLine()
     {
         if(mLines.size() == 0)
@@ -97,7 +98,7 @@ struct Buffer
         // TODO vertical insert mode, just call NextRow() here
         NextColumn();
 
-        mChangesSaved = false;
+        ChangeLine(mCursY);
     }
 
     void InsertLine(std::string text)
@@ -105,6 +106,14 @@ struct Buffer
         mLines.push_back(text);
     }
 
+    // mark that we've changed a line
+    void ChangeLine(int line)
+    {
+        // TODO check if we've already pushed this back if memory a
+        // concern.
+        mChangedLines.push_back(line);
+    }
+    
     void DeleteCharForwards()
     {
         // pressing delete at end of line
@@ -125,7 +134,7 @@ struct Buffer
         }
         Scroll();
 
-        mChangesSaved = false;
+        ChangeLine(mCursY);
     }
 
     // currently unbound
@@ -152,7 +161,7 @@ struct Buffer
         }
         Scroll();
 
-        mChangesSaved = false;
+        ChangeLine(mCursY);
     }
     
     void KillForward()
@@ -166,7 +175,8 @@ struct Buffer
             CurrLine()->erase(mCursX);
         }
         Scroll();
-        mChangesSaved = false;
+
+        ChangeLine(mCursY);
     }
 
     void InsertNewLine()
@@ -179,7 +189,8 @@ struct Buffer
         mLines.insert(mLines.begin() + mCursY + 1, partAfter);
         NextRow();
         StartRow();
-        mChangesSaved = false;
+        
+        ChangeLine(mCursY);
     }
     
     // line at the bottom of the buffer
@@ -197,7 +208,7 @@ struct Buffer
         }
         else
         {
-            if(!mChangesSaved)
+            if(mChangedLines.size() > 0)
             {
                 line += "(*)";
             }
@@ -248,6 +259,8 @@ struct Buffer
         else if(mMode == MODE_EDIT)
         {
             mLines = mSavedLines;
+            mChangedLines = {};
+            
             if(mCursY > (int) mLines.size())
             {
                 mCursY = mLines.size();
@@ -255,7 +268,7 @@ struct Buffer
 
             mCursX = std::min(mCursX, (int) CurrLine()->length());
             Scroll();
-            mChangesSaved = true;
+            mChangedLines = {};
         }
     }
     
@@ -263,7 +276,7 @@ struct Buffer
     {
         if(mFileName == "")
         {
-            // TODO prompt for a filename
+            // TODO prompt for a filename
         }
         else
         {
@@ -275,7 +288,7 @@ struct Buffer
             }
             outfile.close();
         }
-        mChangesSaved = true;
+        mChangedLines = {};
         mSavedLines = mLines;
     }
 
@@ -289,7 +302,7 @@ struct Buffer
 
         mFileName = filename;
         mName = filename;
-        mChangesSaved = true;
+        mChangedLines = {};
         
         std::string line;
         while(getline(infile, line))
@@ -304,7 +317,7 @@ struct Buffer
 
     void MakeFile(std::string filename)
     {
-        mChangesSaved = false;
+        mChangedLines = {};
         mFileName = filename;
         mName = filename;
     }

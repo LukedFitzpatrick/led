@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 
 constexpr char CtrlKey(char k) 
 {
@@ -246,15 +247,20 @@ struct Editor
         int start = buf->mScrollY;
         int end = buf->mScrollY + buf->mNumRows;
 
+        // colours
+        writeString += "\x1b[40m";
+        writeString += "\x1b[37m";
+
+        
         for(int y = start; y < end; y++)
         {
             // clear line
             writeString += "\x1b[K";
             if(y == end - 1)
             {
-
-                writeString += "\x1b[103m";
+                writeString += "\x1b[47m";
                 writeString += "\x1b[30m";
+                
                 // write the led line, centered
                 std::string ledLine = buf->GetLedLine();
                 int padding = (buf->mNumCols-ledLine.size()) / 2;
@@ -267,15 +273,28 @@ struct Editor
                 while(backpadding-- > 0)
                 {
                     writeString += " ";
-                }                
+                }
+
                 writeString += "\x1b[40m";
-                writeString += "\x1b[39m";
+                writeString += "\x1b[37m";
             }
             else
             {
                 if((unsigned int) y < buf->mLines.size())
                 {
-                    writeString += buf->mLines[y];
+                    // edited lines
+                    if(std::find(buf->mChangedLines.begin(),
+                                 buf->mChangedLines.end(),
+                                 y) != buf->mChangedLines.end())
+                    {
+                        writeString += "\x1b[97m";
+                        writeString += buf->mLines[y];
+                        writeString += "\x1b[37m";
+                    }
+                    else
+                    {
+                        writeString += buf->mLines[y];
+                    }
                 }
                 else
                 {
