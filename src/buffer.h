@@ -210,9 +210,12 @@ struct Buffer
         {
             if(mChangedLines.size() > 0)
             {
-                line += "(*)";
+                for(unsigned int i = 0; i < mChangedLines.size(); i++)
+                {
+                    line += "*";
+                }
             }
-            line += "LED : " + mName;
+            line += "LED : " + mName + "(" + std::to_string(mBufId) + ")";
         }
         return line;
     }

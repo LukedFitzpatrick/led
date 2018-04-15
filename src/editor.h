@@ -2,9 +2,11 @@
 #include <sstream>
 #include <istream>
 #include "buffer.h"
+#include "ledlang.h"
 #include <iostream>
 #include <iterator>
 #include <algorithm>
+#include <stdexcept>
 
 constexpr char CtrlKey(char k) 
 {
@@ -62,21 +64,49 @@ struct Editor
     {
         mCurrBuffer->InsertLine(message);
     }
+
+    // interprets commands, stores variables etc.
+    LedLang mLedLang;    
     
     void RunCommand(std::string command)
     {
-        // run a user inputted command
+        // parse and run a user inputted command
 
-        // split into words
+        // TODO remove me after the language works properly
+        if(command == "nb")
+        {
+            NextBuffer();
+        }
+        
+        // split into tokens
         std::stringstream ss(command);
         std::istream_iterator<std::string> begin(ss);
         std::istream_iterator<std::string> end;
-        std::vector<std::string> words(begin, end);
+        std::vector<std::string> tokens(begin, end);
 
-        // TODO write a proper tokeniser + parser here
+        auto AST = mLedLang.ParseTokens(tokens);
+        mLedLang.RunCommand(AST, this);
+        (void) AST;
     }
 
     std::vector<Buffer*> mBuffers = {};
+
+    void NextBuffer()
+    {
+        unsigned int currIndex = mCurrBuffer->mBufId;
+        currIndex++;
+        if(currIndex > mBuffers.size() - 1)
+        {
+            currIndex = 0;
+        }
+        mCurrBuffer = GetBufferById(0);
+        if(mCurrBuffer == nullptr)
+        {
+            throw std::invalid_argument("Next buffer got a nullptr");
+        }
+
+        DrawScreen();
+    }
 
     void AddBuffer(Buffer* buf)
     {
@@ -95,7 +125,6 @@ struct Editor
         }
         return nullptr;
     }
-    
 
     // returns true when it's time to exit
     bool HandleKey(int c)
@@ -190,7 +219,7 @@ struct Editor
             {
                 buf->KillForward();
             } break;        
-        
+
             case '\r':
             {
                 if(buf->mMode == MODE_COMMAND)
@@ -251,9 +280,10 @@ struct Editor
         writeString += "\x1b[40m";
         writeString += "\x1b[37m";
 
-        
+        // TODO: handle long lines        
         for(int y = start; y < end; y++)
         {
+            //writeString += std::to_string(y) + ": ";
             // clear line
             writeString += "\x1b[K";
             if(y == end - 1)

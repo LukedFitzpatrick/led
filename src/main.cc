@@ -5,34 +5,28 @@
 #include "buffer.h"
 #include "term_setup.h"
 #include "editor.h"
-
-// TODO make backspace work
     
 int main(int argc, char* argv[])
 {
     TermSetup t;
 
     Editor led;
-    Buffer buf("", 1, t.mNumCols, t.mNumRows);
 
-    // open a file
+    Buffer buf("", 1, t.mNumCols, t.mNumRows);
+    
+    // open files
     if(argc > 1)
     {
-        bool success = buf.OpenFile(std::string(argv[1]));
-        if(!success)
-        {
-            buf.MakeFile(std::string(argv[1]));
-        }
+        buf.OpenFile(std::string(argv[1]));
+        led.AddBuffer(&buf);
+        led.mCurrBuffer = &buf;        
+    }
+    else
+    {
+        led.AddBuffer(&buf);
+        led.mCurrBuffer = &buf;        
     }
 
-
-
-    led.AddBuffer(&buf);
-    led.mCurrBuffer = &buf;        
-
-    // does all the terminal setup/teardown in the constructor/destructor
-
-    
     bool done = false;
     while(!done)
     {
