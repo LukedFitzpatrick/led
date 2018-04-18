@@ -54,7 +54,6 @@ struct Buffer
     // TODO do we want a linked list here for efficient insertion?
     std::vector<std::string> mLines = {};
     std::vector<std::string> mSavedLines = {};
-    std::vector<int> mChangedLines = {};
     
     std::string* CurrLine()
     {
@@ -97,21 +96,11 @@ struct Buffer
 
         // TODO vertical insert mode, just call NextRow() here
         NextColumn();
-
-        ChangeLine(mCursY);
     }
 
     void InsertLine(std::string text)
     {
         mLines.push_back(text);
-    }
-
-    // mark that we've changed a line
-    void ChangeLine(int line)
-    {
-        // TODO check if we've already pushed this back if memory a
-        // concern.
-        mChangedLines.push_back(line);
     }
     
     void DeleteCharForwards()
@@ -133,8 +122,6 @@ struct Buffer
             CurrLine()->erase(mCursX, 1);
         }
         Scroll();
-
-        ChangeLine(mCursY);
     }
 
     // currently unbound
@@ -160,8 +147,6 @@ struct Buffer
             CurrLine()->erase(mCursX-- -1, 1);
         }
         Scroll();
-
-        ChangeLine(mCursY);
     }
     
     void KillForward()
@@ -175,8 +160,6 @@ struct Buffer
             CurrLine()->erase(mCursX);
         }
         Scroll();
-
-        ChangeLine(mCursY);
     }
 
     void InsertNewLine()
@@ -189,8 +172,6 @@ struct Buffer
         mLines.insert(mLines.begin() + mCursY + 1, partAfter);
         NextRow();
         StartRow();
-        
-        ChangeLine(mCursY);
     }
     
     // line at the bottom of the buffer
@@ -208,12 +189,10 @@ struct Buffer
         }
         else
         {
-            if(mChangedLines.size() > 0)
+            // TODO too slow?
+            if(mSavedLines != mLines)
             {
-                for(unsigned int i = 0; i < mChangedLines.size(); i++)
-                {
-                    line += "*";
-                }
+                line += "*";
             }
             line += "LED : " + mName + "(" + std::to_string(mBufId) + ")";
         }
@@ -262,7 +241,6 @@ struct Buffer
         else if(mMode == MODE_EDIT)
         {
             mLines = mSavedLines;
-            mChangedLines = {};
             
             if(mCursY > (int) mLines.size())
             {
@@ -271,7 +249,6 @@ struct Buffer
 
             mCursX = std::min(mCursX, (int) CurrLine()->length());
             Scroll();
-            mChangedLines = {};
         }
     }
     
@@ -291,36 +268,31 @@ struct Buffer
             }
             outfile.close();
         }
-        mChangedLines = {};
         mSavedLines = mLines;
     }
 
     bool OpenFile(std::string filename)
     {
-        std::ifstream infile(filename);
-        if(!infile.is_open())
-        {
-            return false;
-        }
-
         mFileName = filename;
         mName = filename;
-        mChangedLines = {};
         
-        std::string line;
-        while(getline(infile, line))
+        std::ifstream infile(filename);
+        if(infile.is_open())
         {
-            InsertLine(line);
+            std::string line;
+            while(getline(infile, line))
+            {
+                InsertLine(line);
+            }
+            infile.close();
+            mSavedLines = mLines;
         }
-        infile.close();
-
-        mSavedLines = mLines;
+        
         return true;
     }
 
     void MakeFile(std::string filename)
     {
-        mChangedLines = {};
         mFileName = filename;
         mName = filename;
     }

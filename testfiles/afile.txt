@@ -1,0 +1,19 @@
+This is a file
+
+int main()
+{
+    int x = 5;
+    int y = 10;
+    if(x > y)
+    {
+        blah blah blah blah blah blah ;
+    }
+}
+typing some new text here
+This is another line.
+
+type type type type
+
+typing some more stuff
+
+Blah blah blah a file.

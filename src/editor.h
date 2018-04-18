@@ -312,23 +312,11 @@ struct Editor
             {
                 if((unsigned int) y < buf->mLines.size())
                 {
-                    // edited lines
-                    if(std::find(buf->mChangedLines.begin(),
-                                 buf->mChangedLines.end(),
-                                 y) != buf->mChangedLines.end())
-                    {
-                        writeString += "\x1b[97m";
-                        writeString += buf->mLines[y];
-                        writeString += "\x1b[37m";
-                    }
-                    else
-                    {
-                        writeString += buf->mLines[y];
-                    }
+                    writeString += buf->mLines[y];
                 }
                 else
                 {
-                    //writeString += ".";
+                    writeString += ".";
                 }
             }
 
