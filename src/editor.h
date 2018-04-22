@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <stdexcept>
 #include <sys/ioctl.h>
+#include "tokeniser.h"
+#include <string>
+
 
 constexpr char CtrlKey(char k) 
 {
@@ -282,7 +285,50 @@ struct Editor
     std::string WhiteString = MakeColourString(255, 255, 255);
     std::string OceanBlueString = MakeColourString(82, 76, 234);
     std::string GreenString = MakeColourString(17, 160, 21);
-    
+
+
+    std::string TokenTypeToColourString(TokenType type)
+    {
+        switch(type)
+        {
+            case Identifier:
+            {
+                return GreyString;
+            } break;
+            case Keyword:
+            {
+                return WhiteString;
+            } break;
+            case Literal:
+            {
+                return OceanBlueString;
+            } break;
+            case Operator:
+            {
+                return GreenString;
+            } break;
+            case Punctuator:
+            {
+                return GreenString;
+            } break;
+            case Comment:
+            {
+                return SalmonString;
+            } break;
+            default:
+            {
+                return GreyString;
+            } break;
+        }
+    }
+
+    // tabs mess display up so just replace them with 1 space
+    std::string FixTabs(std::string text)
+    {
+	std::string newString = text;
+	std::replace(newString.begin(), newString.end(), '\t', ' ');
+	return newString;
+    }
     
     void DrawScreen()
     {
@@ -295,7 +341,6 @@ struct Editor
 
         buf->mNumCols = mNumCols;
         buf->mNumRows = mNumRows;
-        
 
         // build up our one string to write to the screen so we don't flicker
         std::string writeString = "";
@@ -347,17 +392,21 @@ struct Editor
             {
                 if((unsigned int) y < buf->mLines.size())
                 {
-                    if((int) buf->mLines[y].length() > mNumCols)
+                    std::string partOfLineToWrite = buf->mLines[y];
+                    if((int) partOfLineToWrite.length() > mNumCols)
                     {
-                        writeString += buf->mLines[y].substr(0, mNumCols);
+                        partOfLineToWrite = partOfLineToWrite.substr(0, mNumCols);
                     }
-                    else
+
+                    for(auto token : Tokenise(partOfLineToWrite, mCurrBuffer->mFileName))
                     {
-                        writeString += buf->mLines[y];
+                        writeString += TokenTypeToColourString(token.type);
+                        writeString += FixTabs(token.text);
                     }
                 }
                 else
                 {
+                    // uncomment this for vim style . on 'not lines'
                     //writeString += ".";
                 }
             }

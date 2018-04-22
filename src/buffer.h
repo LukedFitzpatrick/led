@@ -104,7 +104,7 @@ struct Buffer
         // TODO vertical insert mode, just call NextRow() here
         NextColumn();
     }
-
+    
     void InsertLine(std::string text)
     {
         mLines.push_back(text);
