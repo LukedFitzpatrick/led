@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     else
     {
         led.AddBuffer(&buf);
-        led.mCurrBuffer = &buf;        
+        led.SetCurrentBuffer(&buf);
     }
 
     bool done = false;

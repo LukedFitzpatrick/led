@@ -84,14 +84,21 @@ struct Buffer
             mCursX = std::min(mCursX, (int) CurrLine()->length());
             mCursX = std::max(mCursX, 0);
         }
-        
-
-        // keep the cursor in the middle
-        mScrollY = mCursY - (mNumRows/2);
+        else
+        {
+            mCursX = 0;
+        }
+     
+        // keep the cursor in the middle when we're past the top of the file
+        mScrollY = std::max(0, mCursY - (mNumRows/2));
     }
 
     void InsertChar(char c)
-    {
+    {       
+        while(mCursX > (int) CurrLine()->length())
+        {
+            CurrLine()->append(" ");
+        }
         CurrLine()->insert(mCursX, std::string(1, c));
 
         // TODO vertical insert mode, just call NextRow() here
@@ -122,6 +129,7 @@ struct Buffer
             CurrLine()->erase(mCursX, 1);
         }
         Scroll();
+        ZeroLineCheck();
     }
 
     // currently unbound
@@ -147,6 +155,15 @@ struct Buffer
             CurrLine()->erase(mCursX-- -1, 1);
         }
         Scroll();
+        ZeroLineCheck();
+    }
+
+    void ZeroLineCheck()
+    {
+        if(mLines.size() == 0)
+        {
+            InsertLine("");
+        }
     }
     
     void KillForward()
@@ -164,7 +181,7 @@ struct Buffer
 
     void InsertNewLine()
     {
-        // split current line aat the place where we pressed enter
+        // split current line at the place where we pressed enter
         std::string partBefore = CurrLine()->substr(0, mCursX);
         std::string partAfter = CurrLine()->substr(mCursX);
 
@@ -194,7 +211,7 @@ struct Buffer
             {
                 line += "*";
             }
-            line += "LED : " + mName + "(" + std::to_string(mBufId) + ")";
+            line += mName + " (" + std::to_string(mCursX) + "," + std::to_string(mCursY) + ")";
         }
         return line;
     }
@@ -287,7 +304,8 @@ struct Buffer
             infile.close();
             mSavedLines = mLines;
         }
-        
+
+        ZeroLineCheck();
         return true;
     }
 

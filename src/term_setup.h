@@ -43,7 +43,7 @@ struct TermSetup
         write(STDOUT_FILENO, "\x1b[H", 3);        
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &mOriginalSettings);
     }
-
+    
     struct termios mOriginalSettings;
     int mNumCols;
     int mNumRows;

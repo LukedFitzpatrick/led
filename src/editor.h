@@ -7,6 +7,7 @@
 #include <iterator>
 #include <algorithm>
 #include <stdexcept>
+#include <sys/ioctl.h>
 
 constexpr char CtrlKey(char k) 
 {
@@ -24,6 +25,10 @@ enum SpecialKeys
 
 struct Editor
 {
+    // number of rows/columns in the screen, updated when screen size changes.
+    int mNumRows = 0;
+    int mNumCols = 0;
+
     // read one key from std input
     int ReadKey()
     {
@@ -111,6 +116,12 @@ struct Editor
     void AddBuffer(Buffer* buf)
     {
         mBuffers.push_back(buf);
+    }
+
+    void SetCurrentBuffer(Buffer* buf)
+    {
+        mCurrBuffer = buf;
+        buf->ZeroLineCheck();
     }
     
     // returns nullptr if it can't find it
@@ -261,9 +272,31 @@ struct Editor
         return false;
     }
 
+    std::string MakeColourString(int red, int green, int blue)
+    {
+        return "\x1b[38;2;" + std::to_string(red) + ";" + std::to_string(green) + ";" + std::to_string(blue) + "m";        
+    }
+
+    std::string SalmonString = MakeColourString(255, 82, 92);
+    std::string GreyString = MakeColourString(164, 163, 170);
+    std::string WhiteString = MakeColourString(255, 255, 255);
+    std::string OceanBlueString = MakeColourString(82, 76, 234);
+    std::string GreenString = MakeColourString(17, 160, 21);
+    
+    
     void DrawScreen()
     {
         auto buf = mCurrBuffer;
+        
+        struct winsize ws;
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+        mNumCols = ws.ws_col;
+        mNumRows = ws.ws_row;
+
+        buf->mNumCols = mNumCols;
+        buf->mNumRows = mNumRows;
+        
+
         // build up our one string to write to the screen so we don't flicker
         std::string writeString = "";
 
@@ -274,11 +307,13 @@ struct Editor
         writeString += "\x1b[H";
 
         int start = buf->mScrollY;
-        int end = buf->mScrollY + buf->mNumRows;
+        int end = buf->mScrollY + mNumRows;
 
+        writeString += GreyString;
+        
         // colours
-        writeString += "\x1b[40m";
-        writeString += "\x1b[37m";
+        // writeString += "\x1b[40m";
+        // writeString += "\x1b[37m";
 
         // TODO: handle long lines        
         for(int y = start; y < end; y++)
@@ -293,8 +328,8 @@ struct Editor
                 
                 // write the led line, centered
                 std::string ledLine = buf->GetLedLine();
-                int padding = (buf->mNumCols-ledLine.size()) / 2;
-                int backpadding = buf->mNumCols - (padding + ledLine.size());
+                int padding = (mNumCols-ledLine.size()) / 2;
+                int backpadding = mNumCols - (padding + ledLine.size());
                 while(padding-- > 0)
                 {
                     writeString += " ";
@@ -312,11 +347,18 @@ struct Editor
             {
                 if((unsigned int) y < buf->mLines.size())
                 {
-                    writeString += buf->mLines[y];
+                    if((int) buf->mLines[y].length() > mNumCols)
+                    {
+                        writeString += buf->mLines[y].substr(0, mNumCols);
+                    }
+                    else
+                    {
+                        writeString += buf->mLines[y];
+                    }
                 }
                 else
                 {
-                    writeString += ".";
+                    //writeString += ".";
                 }
             }
 
